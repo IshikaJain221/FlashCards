@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fc-bg:           #0f0e17;
+      --fc-accent:       #e8c547;
+      --fc-accent-2:     #7b6ef6;
+      --fc-text-dark:    #0f0e17;
+      --fc-text-light:   #e8e6f0;
+      --fc-text-muted:   #7c7a92;
+      --fc-wrong:        #e05c5c;
+      --fc-ok:           #e8a33a;
+      --fc-correct:      #4ecb8d;
+      --fc-radius:       20px;
+      --fc-font-display: 'Playfair Display', Georgia, serif;
+      --fc-font-body:    'DM Sans', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--fc-font-body);
+      background: var(--fc-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .fc-app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      width: 100%;
+      max-width: 540px;
+    }
+
+    /* ── Header ── */
+    .fc-header { text-align: center; width: 100%; }
+
+    .fc-eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--fc-accent);
+      margin-bottom: 8px;
+    }
+
+    .fc-title {
+      font-family: var(--fc-font-display);
+      font-size: 34px;
+      color: var(--fc-text-light);
+      margin-bottom: 20px;
+    }
+
+    .fc-progress-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .fc-progress-fill {
+      height: 100%;
+      width: 20%;
+      background: linear-gradient(90deg, var(--fc-accent-2), var(--fc-accent));
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    .fc-meta {
+      font-size: 13px;
+      color: var(--fc-text-muted);
+      margin-top: 10px;
+    }
+
+    /* ── Stack ── */
+    .fc-stack {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      perspective: 1200px;
+    }
+
+    .fc-ghost {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--fc-radius);
+      pointer-events: none;
+    }
+    .fc-ghost-2 { background: #1c1930; transform: translateY(18px) scale(0.92); opacity: 0.3; }
+    .fc-ghost-1 { background: #231f3a; transform: translateY(10px) scale(0.96); opacity: 0.55; }
+
+    /* ── Card ── */
+    .fc-card {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;
+      cursor: pointer;
+      animation: fc-enter 0.5s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .fc-card:hover .fc-face--front,
+    .fc-card:hover .fc-face--back {
+      box-shadow: 0 28px 64px rgba(0,0,0,0.55), 0 0 0 2px rgba(232,197,71,0.25);
+    }
+
+    .fc-card.flipped      { transform: rotateY(180deg); }
+    .fc-card.exit-left    { transform: translateX(-115%) rotate(-8deg); opacity: 0; pointer-events: none; }
+    .fc-card.exit-right   { transform: translateX(115%)  rotate(8deg);  opacity: 0; pointer-events: none; }
+    .fc-card.flash-wrong   .fc-face { box-shadow: 0 0 0 4px var(--fc-wrong)   !important; }
+    .fc-card.flash-ok      .fc-face { box-shadow: 0 0 0 4px var(--fc-ok)      !important; }
+    .fc-card.flash-correct .fc-face { box-shadow: 0 0 0 4px var(--fc-correct) !important; }
+
+    /* ── Faces ── */
+    .fc-face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--fc-radius);
+      padding: 38px 42px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 28px 64px rgba(0,0,0,0.5);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .fc-face--front {
+      background: #ffffff;
+      color: var(--fc-text-dark);
+    }
+    .fc-face--front::before {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #e8c547 0%, transparent 70%);
+      opacity: 0.13;
+    }
+
+    .fc-face--back {
+      background: #1a1828;
+      color: var(--fc-text-light);
+      transform: rotateY(180deg);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .fc-face--back::after {
+      content: '';
+      position: absolute;
+      bottom: -50px; left: -50px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--fc-accent-2) 0%, transparent 70%);
+      opacity: 0.18;
+    }
+
+    .fc-face-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin-bottom: 16px;
+    }
+
+    .fc-face-text {
+      font-family: var(--fc-font-display);
+      font-size: clamp(17px, 3vw, 22px);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .fc-face-hint {
+      font-size: 12px;
+      color: var(--fc-text-muted);
+      margin-top: 22px;
+      animation: fc-pulse 2.2s ease-in-out infinite;
+    }
+
+    .fc-face-tag {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 4px 12px;
+      border-radius: 99px;
+      background: rgba(123,110,246,0.15);
+      border: 1px solid rgba(123,110,246,0.3);
+      color: var(--fc-accent-2);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    /* ── Controls ── */
+    .fc-controls { display: flex; gap: 12px; align-items: center; }
+
+    .fc-btn {
+      font-family: var(--fc-font-body);
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 99px;
+      cursor: pointer;
+      padding: 12px 24px;
+      transition: all 0.25s ease;
+    }
+    .fc-btn-flip {
+      background: var(--fc-accent);
+      color: var(--fc-text-dark);
+      padding: 14px 38px;
+      font-size: 15px;
+    }
+    .fc-btn-flip:hover { background: #f0d060; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,197,71,0.3); }
+
+    .fc-btn-nav {
+      background: rgba(255,255,255,0.06);
+      color: var(--fc-text-light);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .fc-btn-nav:hover  { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+    .fc-btn:active     { transform: scale(0.96) !important; }
+
+    /* ── Verdict ── */
+    .fc-verdict {
+      width: 100%;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .fc-verdict.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    .fc-verdict-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fc-text-muted);
+      margin-bottom: 12px;
+    }
+
+    .fc-verdict-btns { display: flex; gap: 10px; justify-content: center; }
+
+    .fc-vbtn {
+      font-family: var(--fc-font-body);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 99px;
+      cursor: pointer;
+      padding: 10px 20px;
+      transition: all 0.25s ease;
+    }
+    .fc-vbtn-wrong   { background: rgba(224,92,92,.12);  color: var(--fc-wrong);   border: 1px solid rgba(224,92,92,.3); }
+    .fc-vbtn-ok      { background: rgba(232,163,58,.12); color: var(--fc-ok);      border: 1px solid rgba(232,163,58,.3); }
+    .fc-vbtn-correct { background: rgba(78,203,141,.12); color: var(--fc-correct); border: 1px solid rgba(78,203,141,.3); }
+    .fc-vbtn-wrong:hover   { background: rgba(224,92,92,.22);  transform: translateY(-2px); }
+    .fc-vbtn-ok:hover      { background: rgba(232,163,58,.22); transform: translateY(-2px); }
+    .fc-vbtn-correct:hover { background: rgba(78,203,141,.22); transform: translateY(-2px); }
+
+    .fc-chunk-label {
+      font-size: 11px;
+      color: var(--fc-text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+
+    @keyframes fc-enter {
+      from { opacity: 0; transform: translateY(22px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    @keyframes fc-pulse {
+      0%, 100% { opacity: 0.45; }
+      50%       { opacity: 1; }
+    }
+
+    @media (max-width: 520px) {
+      .fc-stack { height: 270px; }
+      .fc-face  { padding: 28px 24px; }
+      .fc-controls { flex-wrap: wrap; justify-content: center; }
+      .fc-btn-flip { width: 100%; order: -1; }
+    }
+  </style>
+</head>
+<body>
+<div class="fc-app">
+
+  <div class="fc-header">
+    <div class="fc-eyebrow">Study Session</div>
+    <h1 class="fc-title">Your Flashcards</h1>
+    <div class="fc-progress-track">
+      <div class="fc-progress-fill" id="fc-progress"></div>
+    </div>
+    <div class="fc-meta">Card <span id="fc-curr">1</span> of <span id="fc-total">5</span></div>
+  </div>
+
+  <div class="fc-stack">
+    <div class="fc-ghost fc-ghost-2"></div>
+    <div class="fc-ghost fc-ghost-1"></div>
+    <div class="fc-card" id="fc-card" onclick="flipCard()">
+      <div class="fc-face fc-face--front">
+        <div class="fc-face-label">Question</div>
+        <p class="fc-face-text" id="fc-question"></p>
+        <div class="fc-face-hint">↕ tap card to reveal answer</div>
+      </div>
+      <div class="fc-face fc-face--back">
+        <div class="fc-face-label">Answer</div>
+        <p class="fc-face-text" id="fc-answer"></p>
+        <div class="fc-face-tag" id="fc-tag"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-controls">
+    <button class="fc-btn fc-btn-nav" onclick="navigate(-1)">← Prev</button>
+    <button class="fc-btn fc-btn-flip" onclick="flipCard()">Flip Card</button>
+    <button class="fc-btn fc-btn-nav" onclick="navigate(1)">Next →</button>
+  </div>
+
+  <div class="fc-verdict" id="fc-verdict">
+    <p class="fc-verdict-label">How did you do?</p>
+    <div class="fc-verdict-btns">
+      <button class="fc-vbtn fc-vbtn-wrong"   onclick="mark('wrong')">✗ Missed it</button>
+      <button class="fc-vbtn fc-vbtn-ok"      onclick="mark('ok')">~ Almost</button>
+      <button class="fc-vbtn fc-vbtn-correct" onclick="mark('correct')">✓ Got it!</button>
+    </div>
+  </div>
+
+  <div class="fc-chunk-label" id="fc-chunk"></div>
+</div>
+
+<script>
+  const cards = [
+    { q: "What is the primary function of mitochondria in eukaryotic cells?",     a: "Mitochondria generate ATP through cellular respiration, serving as the cell's primary energy-producing organelle.", tag: "Biology · Chapter 3" },
+    { q: "What does DNA stand for and what is its role?",                          a: "Deoxyribonucleic Acid — it carries the genetic instructions for the development and function of all living organisms.", tag: "Biology · Chapter 1" },
+    { q: "Define Newton's Second Law of Motion.",                                  a: "Force equals mass times acceleration (F = ma). A larger force on the same mass produces a greater acceleration.", tag: "Physics · Chapter 2" },
+    { q: "What is the difference between meiosis and mitosis?",                    a: "Mitosis produces two identical diploid cells for growth; meiosis produces four genetically diverse haploid cells for reproduction.", tag: "Biology · Chapter 5" },
+    { q: "What is the speed of light in a vacuum?",                                a: "Approximately 299,792,458 m/s (≈ 3 × 10⁸ m/s), denoted as c.", tag: "Physics · Chapter 1" },
+  ];
+
+  let current = 0, flipped = false;
+
+  function render() {
+    const c = cards[current];
+    document.getElementById('fc-question').textContent  = c.q;
+    document.getElementById('fc-answer').textContent    = c.a;
+    document.getElementById('fc-tag').textContent       = c.tag;
+    document.getElementById('fc-curr').textContent      = current + 1;
+    document.getElementById('fc-total').textContent     = cards.length;
+    document.getElementById('fc-chunk').textContent     = `Chunk ${Math.ceil((current+1)/5)} · ${cards.length} cards generated`;
+    document.getElementById('fc-progress').style.width  = ((current + 1) / cards.length * 100) + '%';
+  }
+
+  function flipCard() {
+    flipped = !flipped;
+    document.getElementById('fc-card').classList.toggle('flipped', flipped);
+    document.getElementById('fc-verdict').classList.toggle('visible', flipped);
+  }
+
+  function navigate(dir) {
+    const card    = document.getElementById('fc-card');
+    const verdict = document.getElementById('fc-verdict');
+    card.classList.add(dir === 1 ? 'exit-right' : 'exit-left');
+    setTimeout(() => {
+      current = (current + dir + cards.length) % cards.length;
+      flipped = false;
+      card.classList.remove('exit-right', 'exit-left', 'flipped');
+      verdict.classList.remove('visible');
+      render();
+    }, 400);
+  }
+
+  function mark(result) {
+    const card = document.getElementById('fc-card');
+    card.classList.add('flash-' + result);
+    setTimeout(() => { card.classList.remove('flash-' + result); navigate(1); }, 500);
+  }
+
+  render();
+</script>
+</body>
+</html>
