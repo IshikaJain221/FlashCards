@@ -1,7 +1,7 @@
 from pdf_reader import extract_text_from_pdf
 from flashcard_generator import generate_flashcards
 
-def main():
+def main(): 
     pdf_path = input("Enter the path to your PDF file: ").strip()
 
     print("\nExtracting text from PDF...")
@@ -25,4 +25,5 @@ def main():
     print("=" * 60)
 
 if __name__ == "__main__":
+
     main()
