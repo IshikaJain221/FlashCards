@@ -1,0 +1,26 @@
+This project implements a Retrieval Augmented Generation (RAG) architecture where uploaded documents are embedded into a vector database and retrieved as context.
+A large language model then generates answers and flashcards based on the retrieved context, making it a Generative AI application.
+
+
+
+
+app.py — The Main Controller
+This is the file you run (python app.py). 
+It asks you for a PDF path, calls pdf_reader to extract the text, passes that text to flashcard_generator to create flashcards, and prints the final output in the terminal.
+
+pdf_reader.py — PDF Text Extractor
+Uses the pypdf library to open your PDF, loop through every page, and pull out all the text. It returns everything as one big string.
+If a page has no text or the file isn't found, it handles that gracefully without crashing.
+
+flashcard_generator.py — The Brain
+Does three things: first it splits the extracted text into chunks of ~1200 characters (so large PDFs don't overwhelm the LLM), then it builds a detailed prompt instructing the LLM to generate exactly 5 Q&A flashcards per chunk, then it calls hf_model for each chunk and merges all the results together.
+
+hf_model.py — The API Caller
+Handles all communication with the Hugging Face API. It takes a prompt, sends it to the endpoint, checks for errors, and returns the generated text.
+If the API fails, it raises a clear error instead of crashing silently.
+
+requirements.txt — Dependencies
+Just lists requests and pypdf — the two external libraries the project needs.
+
+The Model — HuggingFaceH4/zephyr-7b-beta
+Zephyr 7B Beta is a 7-billion parameter open-source LLM made by Hugging Face, fine-tuned specifically for following instructions. It's a great fit here because it reliably follows the strict Q&A format the prompt asks for, and it's free to use via the HF Router API with your token.
