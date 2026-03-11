@@ -13,7 +13,9 @@ Uses the pypdf library to open your PDF, loop through every page, and pull out a
 If a page has no text or the file isn't found, it handles that gracefully without crashing.
 
 flashcard_generator.py — The Brain
-Does three things: first it splits the extracted text into chunks of ~1200 characters (so large PDFs don't overwhelm the LLM), then it builds a detailed prompt instructing the LLM to generate exactly 5 Q&A flashcards per chunk, then it calls hf_model for each chunk and merges all the results together.
+Does three things: first it splits the extracted text into chunks of ~1200 characters (so large PDFs don't overwhelm the LLM),
+then it builds a detailed prompt instructing the LLM to generate exactly 5 Q&A flashcards per chunk, 
+then it calls hf_model for each chunk and merges all the results together.
 
 hf_model.py — The API Caller
 Handles all communication with the Hugging Face API. It takes a prompt, sends it to the endpoint, checks for errors, and returns the generated text.
@@ -24,3 +26,25 @@ Just lists requests and pypdf — the two external libraries the project needs.
 
 The Model — HuggingFaceH4/zephyr-7b-beta
 Zephyr 7B Beta is a 7-billion parameter open-source LLM made by Hugging Face, fine-tuned specifically for following instructions. It's a great fit here because it reliably follows the strict Q&A format the prompt asks for, and it's free to use via the HF Router API with your token.
+
+LLaMA stands for Large Language Model Meta AI. It’s a family of open-weight large language models created by Meta and distributed through platforms like Hugging Face.
+
+Think of it as Meta’s alternative to models like OpenAI’s GPT‑4 or Google’s Gemini.
+
+What LLaMA actually is
+
+A transformer-based Large Language Model (LLM) trained on huge text datasets to perform tasks like:
+
+text generation
+
+question answering
+
+summarization
+
+coding
+
+reasoning
+
+chat assistants
+
+Architecture used: Transformer neural network architecture
